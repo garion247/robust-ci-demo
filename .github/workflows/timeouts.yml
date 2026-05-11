@@ -1,41 +1,33 @@
-name: Continue On Error
+name: Status Conditions
 
 on:
   push:
     branches: [ master ]
 
 jobs:
-  step-coe:
+  run:
     runs-on: ubuntu-latest
     steps:
-      - name: Flaky step (continue-on-error)
-        id: flaky
-        continue-on-error: true
-        run: |
-          echo "About to fail..."
-          exit 1
+      - name: Flaky step (no continue-on-error)
+        id: work
+        run: exit 1
 
-      - name: Inspect the result
-        run: |
-          echo "outcome:    ${{ steps.flaky.outcome }}"
-          echo "conclusion: ${{ steps.flaky.conclusion }}"
+      - name: Only on success
+        if: success()
+        run: echo "Will not run - prior step failed"
 
-      - name: Done
-        run: echo "Workflow continues even though flaky step failed"
+      - name: Only on failure
+        if: failure()
+        run: echo "Runs because work failed - good place to alert"
 
-  job-coe:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - run: |
-          echo "Whole job is set continue-on-error"
-          exit 1
+      - name: Only when cancelled
+        if: cancelled()
+        run: echo "Runs only if the workflow was cancelled by a user"
 
-  after-job-coe:
-    needs: job-coe
-    runs-on: ubuntu-latest
-    steps:
-      - name: Inspect upstream result
-        run: |
-          echo "needs.job-coe.result: ${{ needs.job-coe.result }}"
-          echo "Even though job-coe failed, this job still ran."
+      - name: Always runs (cleanup pattern)
+        if: always()
+        run: echo "Runs regardless: cleanup, summary, log upload"
+
+      - name: Selective on outcome
+        if: always() && steps.work.outcome == 'failure'
+        run: echo "Equivalent of failure(), but tied to a specific step"
