@@ -1,0 +1,41 @@
+name: Matrix Fail-Fast
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  ff-true:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        node: [ 18, 20, 22 ]
+    steps:
+      - name: Pretend test (fails on node 18)
+        run: |
+          echo "Node ${{ matrix.node }} starting..."
+          sleep $((10 + ${{ matrix.node }} % 3 * 5))
+          if [ "${{ matrix.node }}" = "18" ]; then
+            echo "Failing on node 18"
+            exit 1
+          fi
+          echo "Node ${{ matrix.node }} passed"
+
+  ff-false:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [ 18, 20, 22 ]
+    steps:
+      - name: Pretend test (fails on node 18)
+        run: |
+          echo "Node ${{ matrix.node }} starting..."
+          sleep $((10 + ${{ matrix.node }} % 3 * 5))
+          if [ "${{ matrix.node }}" = "18" ]; then
+            echo "Failing on node 18"
+            exit 1
+          fi
+          echo "Node ${{ matrix.node }} passed"
