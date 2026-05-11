@@ -1,31 +1,41 @@
-name: Timeouts
+name: Continue On Error
 
 on:
   push:
     branches: [ master ]
-  workflow_dispatch:
 
 jobs:
-  job-with-timeout:
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - name: Sleep 90 seconds (job timeout is 60)
-        run: |
-          echo "Sleeping for 90 seconds; the job will be killed at 60."
-          sleep 90
-
-  step-with-timeout:
+  step-coe:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "First step OK"
-
-      - name: Slow step
-        timeout-minutes: 1
+      - name: Flaky step (continue-on-error)
+        id: flaky
+        continue-on-error: true
         run: |
-          echo "This step has its own 60s timeout."
-          sleep 90
+          echo "About to fail..."
+          exit 1
 
-      - name: Always-runs reporter
-        if: always()
-        run: echo "This step still runs after the prior step timed out."
+      - name: Inspect the result
+        run: |
+          echo "outcome:    ${{ steps.flaky.outcome }}"
+          echo "conclusion: ${{ steps.flaky.conclusion }}"
+
+      - name: Done
+        run: echo "Workflow continues even though flaky step failed"
+
+  job-coe:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - run: |
+          echo "Whole job is set continue-on-error"
+          exit 1
+
+  after-job-coe:
+    needs: job-coe
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect upstream result
+        run: |
+          echo "needs.job-coe.result: ${{ needs.job-coe.result }}"
+          echo "Even though job-coe failed, this job still ran."
