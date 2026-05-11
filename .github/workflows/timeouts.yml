@@ -1,0 +1,31 @@
+name: Timeouts
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  job-with-timeout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Sleep 90 seconds (job timeout is 60)
+        run: |
+          echo "Sleeping for 90 seconds; the job will be killed at 60."
+          sleep 90
+
+  step-with-timeout:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "First step OK"
+
+      - name: Slow step
+        timeout-minutes: 1
+        run: |
+          echo "This step has its own 60s timeout."
+          sleep 90
+
+      - name: Always-runs reporter
+        if: always()
+        run: echo "This step still runs after the prior step timed out."
